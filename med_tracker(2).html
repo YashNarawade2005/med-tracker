@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Did I Take It?</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --card: #1a1e28;
+    --border: #252a38;
+    --accent: #00e5a0;
+    --accent2: #ff6b6b;
+    --accent3: #ffd166;
+    --text: #e8ecf4;
+    --muted: #6b7494;
+    --taken: #00e5a0;
+    --missed: #ff6b6b;
+    --pending: #ffd166;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb {
+    position: fixed;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,229,160,0.07) 0%, transparent 70%);
+    top: -100px; left: -100px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-orb2 {
+    position: fixed;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,107,107,0.05) 0%, transparent 70%);
+    bottom: -100px; right: -100px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-icon {
+    width: 48px; height: 48px;
+    background: var(--accent);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 20px rgba(0,229,160,0.3);
+  }
+
+  .logo h1 {
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo span {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .date-badge {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  .date-badge strong {
+    display: block;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.taken-stat::before { background: var(--taken); }
+  .stat-card.missed-stat::before { background: var(--missed); }
+  .stat-card.pending-stat::before { background: var(--pending); }
+
+  .stat-num {
+    font-family: 'Inter', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-card.taken-stat .stat-num { color: var(--taken); }
+  .stat-card.missed-stat .stat-num { color: var(--missed); }
+  .stat-card.pending-stat .stat-num { color: var(--pending); }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ADD MEDICATION */
+  .section-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .add-form {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 36px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .field label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,160,0.1);
+  }
+
+  .field input::placeholder { color: var(--muted); }
+
+  .add-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+
+  .add-btn:hover {
+    background: #00ffb3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,229,160,0.35);
+  }
+
+  /* MED CARDS */
+  .med-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+
+  .med-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    animation: slideIn 0.35s ease both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .med-card.is-taken {
+    border-color: rgba(0,229,160,0.25);
+    background: rgba(0,229,160,0.04);
+  }
+
+  .med-card.is-missed {
+    border-color: rgba(255,107,107,0.2);
+    background: rgba(255,107,107,0.03);
+  }
+
+  .pill-icon {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .is-taken .pill-icon { background: rgba(0,229,160,0.1); border-color: rgba(0,229,160,0.3); }
+  .is-missed .pill-icon { background: rgba(255,107,107,0.1); border-color: rgba(255,107,107,0.3); }
+
+  .med-info { flex: 1; }
+
+  .med-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .med-meta {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    gap: 14px;
+  }
+
+  .med-meta span { display: flex; align-items: center; gap: 5px; }
+
+  .med-status {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-right: 12px;
+  }
+
+  .status-pending { color: var(--pending); background: rgba(255,209,102,0.1); border: 1px solid rgba(255,209,102,0.2); }
+  .status-taken { color: var(--taken); background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.25); }
+  .status-missed { color: var(--missed); background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.2); }
+
+  .take-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .take-btn:hover:not(:disabled) {
+    background: #00ffb3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,229,160,0.35);
+  }
+
+  .take-btn:disabled {
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .delete-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+
+  .delete-btn:hover {
+    border-color: var(--missed);
+    color: var(--missed);
+    background: rgba(255,107,107,0.08);
+  }
+
+  /* DOUBLE-DOSE WARNING */
+  .warning-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: #1a1e28;
+    border: 1px solid var(--missed);
+    border-radius: 12px;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--missed);
+    z-index: 999;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    white-space: nowrap;
+  }
+
+  .warning-toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* LOG */
+  .log-section { margin-bottom: 36px; }
+
+  .log-entry {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    font-size: 13px;
+    animation: slideIn 0.3s ease both;
+  }
+
+  .log-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-taken { background: var(--taken); box-shadow: 0 0 6px var(--taken); }
+  .dot-missed { background: var(--missed); box-shadow: 0 0 6px var(--missed); }
+
+  .log-time { color: var(--muted); font-size: 11px; margin-left: auto; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+  }
+  .empty-state .big-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+  .empty-state p { font-size: 14px; }
+
+  /* CONFETTI burst on take */
+  @keyframes pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  .pop-anim { animation: pop 0.3s ease; }
+
+  @keyframes bannerSlide {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    .add-form { grid-template-columns: 1fr 1fr; }
+    .add-btn { grid-column: span 2; }
+    .stats-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .stat-num { font-size: 26px; }
+    header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="glow-orb"></div>
+<div class="glow-orb2"></div>
+
+<div class="warning-toast" id="warningToast">
+  ⚠️ Already taken! Wait until tomorrow.
+</div>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">💊</div>
+      <div>
+        <h1>Did I Take It?</h1>
+        <span>Smart Medication Tracker</span>
+      </div>
+    </div>
+    <div class="date-badge" id="dateBadge">
+      <strong id="todayDate">—</strong>
+      <span id="todayDay">—</span>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card taken-stat">
+      <div class="stat-num" id="statTaken">0</div>
+      <div class="stat-label">✅ Taken</div>
+    </div>
+    <div class="stat-card missed-stat">
+      <div class="stat-num" id="statMissed">0</div>
+      <div class="stat-label">❌ Missed</div>
+    </div>
+    <div class="stat-card pending-stat">
+      <div class="stat-num" id="statPending">0</div>
+      <div class="stat-label">⏳ Pending</div>
+    </div>
+  </div>
+
+  <!-- Add Form -->
+  <div class="section-title">Add Medication</div>
+  <div class="add-form">
+    <div class="field">
+      <label>Medicine Name</label>
+      <input type="text" id="medName" placeholder="e.g. Paracetamol">
+    </div>
+    <div class="field">
+      <label>Dosage</label>
+      <input type="text" id="medDose" placeholder="e.g. 500mg">
+    </div>
+    <div class="field">
+      <label>Reminder Time</label>
+      <input type="time" id="medTime">
+    </div>
+    <button class="add-btn" onclick="addMed()">+ Add</button>
+  </div>
+
+  <!-- Today's Medications -->
+  <div class="section-title">Today's Schedule</div>
+  <div class="med-list" id="medList">
+    <div class="empty-state">
+      <div class="big-icon">🌿</div>
+      <p>No medications added yet.<br>Add one above to get started.</p>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="log-section">
+    <div class="section-title">Today's Log</div>
+    <div id="logList">
+      <div class="empty-state" style="padding: 24px;">
+        <p>No activity logged yet.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const TODAY = new Date().toDateString();
+
+  // Load from localStorage
+  let meds = JSON.parse(localStorage.getItem('meds_v2') || '[]');
+  let logs = JSON.parse(localStorage.getItem('logs_v2') || '[]');
+
+  // Reset statuses if it's a new day
+  meds = meds.map(m => {
+    if (m.lastTakenDate !== TODAY && m.status === 'taken') {
+      return { ...m, status: 'pending', lastTakenDate: null };
+    }
+    return m;
+  });
+
+  // Also clear logs from yesterday
+  logs = logs.filter(l => l.date === TODAY);
+
+  save();
+
+  // Date display
+  const now = new Date();
+  document.getElementById('todayDate').textContent = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  document.getElementById('todayDay').textContent = now.toLocaleDateString('en-IN', { weekday: 'long' });
+
+  function save() {
+    localStorage.setItem('meds_v2', JSON.stringify(meds));
+    localStorage.setItem('logs_v2', JSON.stringify(logs));
+  }
+
+  function getMissed() {
+    return meds.filter(m => {
+      if (m.status === 'taken') return false;
+      if (!m.time) return false;
+      return isPastScheduled(m.time);
+    }).map(m => ({ ...m, status: 'missed' }));
+  }
+
+
+  function isPastScheduled(timeStr) {
+    const [h, min] = timeStr.split(':').map(Number);
+    const now = new Date();
+    return (now.getHours() * 60 + now.getMinutes()) > (h * 60 + min);
+  }
+  function getStats() {
+    const taken = meds.filter(m => m.status === 'taken').length;
+    const missed = meds.filter(m => {
+      if (m.status === 'taken') return false;
+      if (!m.time) return false;
+      return isPastScheduled(m.time);
+    }).length;
+    const pending = meds.length - taken - missed;
+    return { taken, missed, pending: Math.max(0, pending) };
+  }
+
+  function render() {
+    const stats = getStats();
+    document.getElementById('statTaken').textContent = stats.taken;
+    document.getElementById('statMissed').textContent = stats.missed;
+    document.getElementById('statPending').textContent = stats.pending;
+
+    const list = document.getElementById('medList');
+    if (meds.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="big-icon">🌿</div><p>No medications added yet.<br>Add one above to get started.</p></div>`;
+    } else {
+      list.innerHTML = meds.map((m, i) => {
+        const isMissed = m.status !== 'taken' && m.time && isPastScheduled(m.time);
+        const statusClass = m.status === 'taken' ? 'status-taken' : isMissed ? 'status-missed' : 'status-pending';
+        const statusLabel = m.status === 'taken' ? '✓ Taken' : isMissed ? '✗ Missed' : '⏳ Pending';
+        const cardClass = m.status === 'taken' ? 'is-taken' : isMissed ? 'is-missed' : '';
+        const icons = ['💊','🔵','🟡','🔴','🟢','🟠'];
+        const icon = icons[i % icons.length];
+        return `
+          <div class="med-card ${cardClass}" id="card-${i}">
+            <div class="pill-icon">${icon}</div>
+            <div class="med-info">
+              <div class="med-name">${escHtml(m.name)}</div>
+              <div class="med-meta">
+                <span>⚖️ ${escHtml(m.dose)}</span>
+                ${m.time ? `<span>⏰ ${formatTime(m.time)}</span>` : ''}
+              </div>
+            </div>
+            <span class="med-status ${statusClass}">${statusLabel}</span>
+            <button class="take-btn" onclick="takeMed(${i})" ${m.status === 'taken' ? 'disabled' : ''}>
+              ${m.status === 'taken' ? '✓ Done' : 'Mark Taken'}
+            </button>
+            <button class="delete-btn" onclick="deleteMed(${i})" title="Remove">✕</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Log
+    const logEl = document.getElementById('logList');
+    if (logs.length === 0) {
+      logEl.innerHTML = `<div class="empty-state" style="padding:24px;"><p>No activity logged yet.</p></div>`;
+    } else {
+      logEl.innerHTML = [...logs].reverse().map(l => `
+        <div class="log-entry">
+          <div class="log-dot ${l.action === 'taken' ? 'dot-taken' : 'dot-missed'}"></div>
+          <span>${escHtml(l.name)} — ${l.action === 'taken' ? '✅ Marked as taken' : '❌ Missed'}</span>
+          <span class="log-time">${l.time}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  function takeMed(i) {
+    const m = meds[i];
+    if (m.status === 'taken') {
+      showWarning();
+      return;
+    }
+    meds[i].status = 'taken';
+    meds[i].lastTakenDate = TODAY;
+    logs.push({
+      name: m.name,
+      action: 'taken',
+      time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      date: TODAY
+    });
+    save();
+
+    // Pop anim
+    const card = document.getElementById(`card-${i}`);
+    if (card) { card.classList.add('pop-anim'); setTimeout(() => card.classList.remove('pop-anim'), 300); }
+
+    render();
+  }
+
+  function deleteMed(i) {
+    meds.splice(i, 1);
+    save();
+    render();
+  }
+
+  function addMed() {
+    const name = document.getElementById('medName').value.trim();
+    const dose = document.getElementById('medDose').value.trim();
+    const time = document.getElementById('medTime').value;
+
+    if (!name || !dose) {
+      document.getElementById('medName').focus();
+      return;
+    }
+
+    meds.push({ name, dose, time, status: 'pending', lastTakenDate: null });
+    save();
+
+    document.getElementById('medName').value = '';
+    document.getElementById('medDose').value = '';
+    document.getElementById('medTime').value = '';
+
+    render();
+
+    if (time) scheduleNotification(name, time, meds.length - 1);
+  }
+
+  function showWarning() {
+    const t = document.getElementById('warningToast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // Track scheduled timers so we don't duplicate
+  const scheduledTimers = {};
+
+  function scheduleNotification(name, time, idx) {
+    const [h, m] = time.split(':').map(Number);
+    const target = new Date(); target.setHours(h, m, 0, 0);
+    const diff = target - new Date();
+    if (diff <= 0) return; // past time, skip
+
+    // Clear any existing timer for this med
+    if (scheduledTimers[idx]) clearTimeout(scheduledTimers[idx]);
+
+    scheduledTimers[idx] = setTimeout(() => {
+      // Check if already taken — don't alert if user already marked it
+      const med = meds[idx];
+      if (med && med.status === 'taken') return;
+
+      // 1. Try browser notification (works when opened as local file)
+      if ('Notification' in window && !isIframe()) {
+        Notification.requestPermission().then(perm => {
+          if (perm === 'granted') {
+            new Notification(`💊 Time for ${name}!`, {
+              body: 'Tap "Mark Taken" in your tracker.',
+            });
+          }
+        });
+      }
+
+      // 2. Always show in-app alert banner (works everywhere)
+      showAlertBanner(name, idx);
+      // Also play a beep
+      playBeep();
+    }, diff);
+  }
+
+  function isIframe() {
+    try { return window.self !== window.top; } catch(e) { return true; }
+  }
+
+  function showAlertBanner(name, idx) {
+    // Remove existing banner if any
+    const old = document.getElementById('alertBanner');
+    if (old) old.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'alertBanner';
+    banner.style.cssText = `
+      position:fixed; top:0; left:0; right:0; z-index:9999;
+      background:#ffd166; color:#000;
+      font-family:'Inter',sans-serif; font-weight:700; font-size:15px;
+      padding:16px 24px;
+      display:flex; align-items:center; justify-content:space-between;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      animation: bannerSlide 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    `;
+    banner.innerHTML = `
+      <span>⏰ &nbsp;Time to take <strong>${escHtml(name)}</strong>!</span>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button onclick="takeMed(${idx}); document.getElementById('alertBanner').remove();"
+          style="background:#000;color:#ffd166;border:none;border-radius:8px;
+                 padding:8px 16px;font-family:'Inter',sans-serif;font-weight:700;
+                 font-size:13px;cursor:pointer;">
+          ✓ Mark Taken
+        </button>
+        <button onclick="document.getElementById('alertBanner').remove();"
+          style="background:rgba(0,0,0,0.15);border:none;border-radius:8px;
+                 padding:8px 12px;font-size:18px;cursor:pointer;line-height:1;">
+          ✕
+        </button>
+      </div>
+    `;
+    document.body.prepend(banner);
+
+    // Auto-dismiss after 60s
+    setTimeout(() => { if (banner.parentNode) banner.remove(); }, 60000);
+  }
+
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 520;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.8);
+    } catch(e) {}
+  }
+
+  function formatTime(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${((h % 12) || 12)}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Auto refresh every 10 seconds to update missed status
+  setInterval(render, 10000);
+
+  render();
+</script>
+</body>
+</html>
